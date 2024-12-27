@@ -1,0 +1,140 @@
+#!/bin/bash
+
+# Define global settings
+session_file="$HOME/.tmux_session_manager_savefile.sav"
+session_file_enabled=false
+declare -a sessions
+
+# Toggle session saving on or off
+function toggle_session_saving {
+    session_file_enabled=$([[ "$session_file_enabled" = true ]] && echo false || echo true)
+    echo "Session saving is now $( [[ "$session_file_enabled" = true ]] && echo "enabled" || echo "disabled")."
+    sleep 2
+}
+
+# Set the session file path
+function set_session_file_path {
+    read -p "Enter new session file path: " new_path
+    if [[ -n "$new_path" ]]; then
+        session_file="$new_path"
+        echo "Session file path set to $session_file"
+    else
+        echo "No path entered. Session file path remains unchanged."
+    fi
+    sleep 2
+}
+
+# Save session configuration to file
+function save_sessions {
+    if [ "$session_file_enabled" = true ]; then
+        echo "[" > "$session_file"
+        tmux list-sessions -F '#{session_name}: #{session_windows} windows (created #{session_created})' | 
+        while IFS= read -r session_info; do
+            echo "{\"session\": \"$session_info\"}," >> "$session_file"
+        done
+        sed -i '$ s/,$//' "$session_file"  # fix JSON syntax by removing the last comma
+        echo "]" >> "$session_file"
+        echo "Sessions have been saved to $session_file."
+    else
+        echo "Session saving to file is currently disabled."
+    fi
+}
+
+# Display session and commands
+function display_sessions {
+    clear
+    echo "Session file: $session_file [$( [[ "$session_file_enabled" = true ]] && echo 'Enabled' || echo 'Disabled')]"
+    mapfile -t sessions < <(tmux list-sessions -F '#S' 2>/dev/null)
+    if [ ${#sessions[@]} -eq 0 ]; then
+        echo "-- No active sessions --"
+    else
+        for i in "${!sessions[@]}"; do
+            echo "$((i + 1)). ${sessions[i]}"
+        done
+    fi
+    echo "--------"
+    echo "Commands:"
+    echo "C - Create and attach a new session"
+    echo "R - Rename an existing session"
+    echo "D - Delete a session"
+    echo "S - Session Manager Configuration"
+    echo "N - Number (Enter number to attach to a session)"
+    echo "X - Exit"
+    echo "--------"
+}
+
+# Attach to an existing session
+function attach_to_session {
+    read -p "Enter session number to attach: " session_num
+    if ! [[ "$session_num" =~ ^[0-9]+$ ]] || (( session_num < 1 || session_num > ${#sessions[@]} )); then
+        echo "Invalid session number. Please try again."
+        sleep 2
+    else
+        tmux attach-session -t "${sessions[$((session_num-1))]}"
+    fi
+}
+
+# Handle user input from main menu
+function process_input {
+    read -p "Selection: " input
+    case "$input" in
+        [1-9]|[1-9][0-9]*)
+            if (( input > 0 && input <= ${#sessions[@]} )); then
+                attach_to_session $input
+            else
+                echo "Invalid session number. Please try again."
+                sleep 2
+            fi
+            ;;
+        C|c) 
+            read -p "Enter session name: " sname
+            tmux new-session -d -s "$sname" && tmux attach-session -t "$sname"
+            save_sessions
+            ;;
+        R|r) 
+            rename_session
+            ;;
+        D|d) 
+            delete_session
+            ;;
+        S|s) 
+            session_manager_configuration_menu
+            ;;
+        X|x)
+            break
+            ;;
+        *) 
+            echo "Invalid selection. Please choose a command from the list or a valid session number."
+            read -p "Press any key to continue..."
+            ;;
+    esac
+}
+
+# Configuration menu for session manager
+function session_manager_configuration_menu {
+    while true; do
+        clear
+        echo "Session Manager Configuration:"
+        echo "1 - Toggle session save file (Currently $( [[ "$session_file_enabled" = true ]] && echo 'Enabled' || echo 'Disabled'))"
+        echo "2 - Set session file path (Currently: $session_file)"
+        echo "3 - Return to Main Menu"
+        echo "-----------------------"
+        read -p "Select option: " config_selection
+
+        case $config_selection in
+            1) toggle_session_saving ;;
+            2) set_session_file_path ;;
+            3) break ;;
+            *) 
+                echo "Invalid option! Please try again."
+                sleep 2
+                ;;
+        esac
+    done
+}
+
+# Start the main loop
+while true; do
+    display_sessions
+    process_input
+done
