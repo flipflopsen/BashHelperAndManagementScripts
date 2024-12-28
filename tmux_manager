@@ -25,7 +25,7 @@ function set_config_file_path {
     else
         echo "No path entered. Configuration file path remains unchanged."
     fi
-    sleep 2
+    sleep 1
 }
 
 # Restore the tmux manager configuration
@@ -54,7 +54,7 @@ function toggle_session_saving {
     fi
     echo "Session saving is now $( [[ "$session_file_enabled" = true ]] && echo "enabled" || echo "disabled")."
     save_configuration  # Save configuration after updating
-    sleep 2
+    sleep 1
 }
 
 # Set the session file path
@@ -67,14 +67,14 @@ function set_session_file_path {
     else
         echo "No path entered. Session file path remains unchanged."
     fi
-    sleep 2
+    sleep 1
 }
 
 function toggle_attach_after_creation {
     attach_after_creation=$([[ "$attach_after_creation" == "false" ]] && echo "true" || echo "false")
     echo "Attach directly after creation is now $( [[ "$attach_after_creation" == "true" ]] && echo "enabled" || echo "disabled")."
     save_configuration
-    sleep 2
+    sleep 1
 }
 
 function session_manager_configuration_menu {
@@ -112,7 +112,7 @@ function session_manager_configuration_menu {
             ;; # Break the loop, return to main menu
         *)
             echo "Invalid option! Please try again."
-            sleep 2
+            sleep 1
             session_manager_configuration_menu
             ;;
     esac
@@ -150,10 +150,6 @@ function save_sessions {
         # Remove the last comma and close the JSON array for sessions
         sed -i '$ s/,$//' "$session_file"
         echo "]" >> "$session_file"
-        
-        echo "Sessions have been saved to $session_file."
-    else
-        echo "Session saving to file is currently disabled."
     fi
 }
 
@@ -203,7 +199,7 @@ function attach_to_session {
             tmux attach-session -t "$input"
         else
             echo "No session found with identifier '$input'. Identifiers can be session numbers or names."
-            sleep 2
+            sleep 1
         fi
     fi
 }
@@ -225,6 +221,43 @@ function create_new_session {
     fi
 }
 
+# Function to delete a session
+function delete_session {
+    display_sessions # Display current sessions to choose from
+    read -p "Enter session number or name to delete: " session_to_delete
+    if [[ "$session_to_delete" =~ ^[0-9]+$ ]] && (( session_to_delete > 0 && session_to_delete <= ${#sessions[@]} )); then
+        session_to_delete=${sessions[$((session_to_delete-1))]}
+    fi
+
+    if tmux has-session -t "$session_to_delete" 2>/dev/null; then
+        tmux kill-session -t "$session_to_delete"
+        echo "Session '$session_to_delete' has been deleted."
+        save_sessions  # Update the session save file
+    else
+        echo "Session '$session_to_delete' was not found."
+    fi
+    sleep 1
+}
+
+# Function to rename an existing session
+function rename_session {
+    display_sessions # Display current sessions to choose from
+    read -p "Enter session number or current name to rename: " session_to_rename
+    if [[ "$session_to_rename" =~ ^[0-9]+$ ]] && (( session_to_rename > 0 && session_to_rename <= ${#sessions[@]} )); then
+        session_to_rename=${sessions[$((session_to_rename-1))]}
+    fi
+
+    if tmux has-session -t "$session_to_rename" 2>/dev/null; then
+        read -p "Enter new session name: " new_session_name
+        tmux rename-session -t "$session_to_rename" "$new_session_name"
+        echo "Session '$session_to_rename' has been renamed to '$new_session_name'."
+        save_sessions  # Update the session save file
+    else
+        echo "Session '$session_to_rename' was not found."
+    fi
+    sleep 1
+}
+
 # Handle main input processing
 function process_input {
     read -p "Selection: " input
@@ -240,16 +273,16 @@ function process_input {
             create_new_session
             ;;
         [Rr]) # Rename a session
-            # ... existing logic
+            rename_session
             ;;
         [Dd]) # Delete a session
-            # ... existing logic
+            delete_session
             ;;
         [Ss]) # Open config menu
             session_manager_configuration_menu
             ;;
         [Xx]) # Exit script
-            break
+            exit
             ;;
         *) 
             echo "Invalid selection. Please choose a command from the list."
