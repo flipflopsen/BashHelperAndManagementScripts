@@ -188,20 +188,27 @@ function restore_sessions {
 
 # Attach to an existing session by number or name
 function attach_to_session {
-    local input="$1"
+    local session_input="$1"
     
-    # Check if input is a number and within the valid range
-    if [[ "$input" =~ ^[0-9]+$ ]] && (( input > 0 && input <= ${#sessions[@]} )); then
-        tmux attach-session -t "${sessions[$((input-1))]}"
+    # Check if input is numeric and within the range of available sessions
+    if [[ "$session_input" =~ ^[0-9]+$ ]] && (( session_input > 0 && session_input <= ${#sessions[@]} )); then
+        # Input is numeric, use it as an index (arrays are zero-indexed)
+        tmux attach-session -t "${sessions[$((session_input-1))]}"
     else
-        # Try to match input as a session name
-        if tmux has-session -t "$input" 2>/dev/null; then
-            tmux attach-session -t "$input"
+        # Not a number or out of range, try to attach using the input as a session name
+        if tmux has-session -t "$session_input" 2>/dev/null; then
+            tmux attach-session -t "$session_input"
         else
-            echo "No session found with identifier '$input'. Identifiers can be session numbers or names."
-            sleep 1
+            # If tmux has-session command fails, it's an invalid session identifier
+            echo "Invalid selection. Please choose a command from the list or enter a valid session identifier."
+            read -p "Press any key to continue..."
         fi
     fi
+}
+
+
+function refresh_sessions {
+    mapfile -t sessions < <(tmux list-sessions -F '#S' 2>/dev/null)
 }
 
 
@@ -285,8 +292,9 @@ function process_input {
             exit
             ;;
         *) 
-            echo "Invalid selection. Please choose a command from the list."
-            read -p "Press any key to continue..."
+            # in this case maybe the user tries to attach via the name of the session.
+            # exception handling for that is now in attach function
+            attach_to_session "$input"
             ;;
     esac
 }
@@ -346,6 +354,7 @@ if [[ "$session_file_enabled" == "true" ]]; then
 fi
 
 while true; do
+    refresh_sessions
     display_sessions
     process_input
 done
