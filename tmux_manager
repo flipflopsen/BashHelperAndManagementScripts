@@ -1,14 +1,59 @@
 #!/bin/bash
 
-# Define global settings
+# Global Settings and Vars
 session_file="$HOME/.tmux_session_manager_savefile.sav"
+config_file="$HOME/.tmux_session_manager_settings.conf"
 session_file_enabled=false
+attach_after_creation=false
 declare -a sessions
+
+# Save the tmux manager configuration
+function save_configuration {
+    echo "saving_enabled=$session_file_enabled" > "$config_file"
+    echo "session_file_path=$session_file" >> "$config_file"
+    echo "config_file_path=$config_file" >> "$config_file"
+    echo "attach_after_creation=$attach_after_creation" >> "$config_file"
+}
+
+# Sets the config file path (in options menu)
+function set_config_file_path {
+    read -p "Enter new configuration file path: " new_config_path
+    if [[ -n "$new_config_path" ]]; then
+        config_file="$new_config_path"
+        echo "Configuration file path set to $config_file"
+        save_configuration
+    else
+        echo "No path entered. Configuration file path remains unchanged."
+    fi
+    sleep 2
+}
+
+# Restore the tmux manager configuration
+function restore_configuration {
+    if [[ -e "$config_file" ]]; then
+        source "$config_file"
+        [ "$saving_enabled" == "true" ] && session_file_enabled=true || session_file_enabled=false
+        [ "$attach_after_creation" == "true" ] && attach_after_creation=true || attach_after_creation=false
+        echo "Configuration restored from $config_file"
+    else
+        echo "No configuration file found. Using default settings."
+        session_file_enabled=false
+        attach_after_creation=false
+        config_file="$HOME/.tmux_session_manager_settings.conf"
+        session_file="$HOME/.tmux_session_manager_savefile.sav"
+        save_configuration
+    fi
+}
 
 # Toggle session saving on or off
 function toggle_session_saving {
-    session_file_enabled=$([[ "$session_file_enabled" = true ]] && echo false || echo true)
+    if [ "$session_file_enabled" = true ]; then
+        session_file_enabled=false
+    else
+        session_file_enabled=true
+    fi
     echo "Session saving is now $( [[ "$session_file_enabled" = true ]] && echo "enabled" || echo "disabled")."
+    save_configuration  # Save configuration after updating
     sleep 2
 }
 
@@ -18,122 +63,255 @@ function set_session_file_path {
     if [[ -n "$new_path" ]]; then
         session_file="$new_path"
         echo "Session file path set to $session_file"
+        save_configuration  # Save configuration after updating
     else
         echo "No path entered. Session file path remains unchanged."
     fi
     sleep 2
 }
 
+function toggle_attach_after_creation {
+    attach_after_creation=$([[ "$attach_after_creation" == "false" ]] && echo "true" || echo "false")
+    echo "Attach directly after creation is now $( [[ "$attach_after_creation" == "true" ]] && echo "enabled" || echo "disabled")."
+    save_configuration
+    sleep 2
+}
+
+function session_manager_configuration_menu {
+    clear
+    echo -e "\033[1;34mSession Manager Configuration\033[0m|"
+    echo "------------------------------"
+    echo -e "1 - Toggle session save file [Currently: $( [[ "$session_file_enabled" == "true" ]] && echo -e '\033[32mEnabled\033[0m' || echo -e '\033[31mDisabled\033[0m')]"
+    echo -e "2 - Toggle attach after session creation [Currently: $( [[ "$attach_after_creation" == "true" ]] && echo -e '\033[32mEnabled\033[0m' || echo -e '\033[31mDisabled\033[0m')]"
+    echo ""
+    echo -e "3 - Set session file path [Currently: $session_file]"
+    echo -e "4 - Set configuration file path [Currently: $config_file]"
+    echo ""
+    echo -e "5 - \033[0;33mReturn to Main Menu\033[0m"
+    echo "-----------------------"
+    read -p "Select option: " config_selection
+
+    case $config_selection in
+        1)
+            toggle_session_saving
+            session_manager_configuration_menu
+            ;;
+        2)
+            toggle_attach_after_creation
+            session_manager_configuration_menu
+            ;;
+        3)
+            set_session_file_path
+            session_manager_configuration_menu
+            ;;
+        4)
+            set_config_file_path
+            session_manager_configuration_menu
+            ;;
+        5)
+            ;; # Break the loop, return to main menu
+        *)
+            echo "Invalid option! Please try again."
+            sleep 2
+            session_manager_configuration_menu
+            ;;
+    esac
+}
+
+
 # Save session configuration to file
 function save_sessions {
     if [ "$session_file_enabled" = true ]; then
+        # Start of JSON array
         echo "[" > "$session_file"
-        tmux list-sessions -F '#{session_name}: #{session_windows} windows (created #{session_created})' | 
-        while IFS= read -r session_info; do
-            echo "{\"session\": \"$session_info\"}," >> "$session_file"
+        
+        tmux list-sessions -F '#{session_id} #{session_name}' | while read -r session_id session_name; do
+            echo "{\"session_name\": \"$session_name\", \"windows\": [" >> "$session_file"
+            
+            # Iterate over each window in the session
+            tmux list-windows -t "$session_id" -F '#{window_id} #{window_name}' | while read -r window_id window_name; do
+                echo "{\"window_name\": \"$window_name\", \"panes\": [" >> "$session_file"
+                
+                # Iterate over each pane in the window
+                tmux list-panes -t "$window_id" -F '#{pane_id} #{pane_current_path}' | while read -r pane_id pane_path; do
+                    echo "{\"pane_id\": \"$pane_id\", \"path\": \"$pane_path\"}," >> "$session_file"
+                done
+                
+                # Remove the last comma and close the JSON array for panes
+                sed -i '$ s/,$//' "$session_file"
+                echo "] }," >> "$session_file"
+            done
+            
+            # Remove the last comma and close the JSON array for windows
+            sed -i '$ s/,$//' "$session_file"
+            echo "] }," >> "$session_file"
         done
-        sed -i '$ s/,$//' "$session_file"  # fix JSON syntax by removing the last comma
+        
+        # Remove the last comma and close the JSON array for sessions
+        sed -i '$ s/,$//' "$session_file"
         echo "]" >> "$session_file"
+        
         echo "Sessions have been saved to $session_file."
     else
         echo "Session saving to file is currently disabled."
     fi
 }
 
-# Display session and commands
-function display_sessions {
-    clear
-    echo "Session file: $session_file [$( [[ "$session_file_enabled" = true ]] && echo 'Enabled' || echo 'Disabled')]"
-    mapfile -t sessions < <(tmux list-sessions -F '#S' 2>/dev/null)
-    if [ ${#sessions[@]} -eq 0 ]; then
-        echo "-- No active sessions --"
-    else
-        for i in "${!sessions[@]}"; do
-            echo "$((i + 1)). ${sessions[i]}"
+# Restore sessions at startup
+function restore_sessions {
+    if [[ -f "$session_file" && "$session_file_enabled" = true ]]; then
+        echo "Restoring sessions from $session_file..."
+        jq -c '.[]' "$session_file" | while IFS= read -r session_json; do
+            session_name=$(echo "$session_json" | jq -r '.session_name')
+            # Create the session without attaching
+            tmux new-session -d -s "$session_name"
+            echo "$session_json" | jq -c '.windows[]' | while IFS= read -r window_json; do
+                window_name=$(echo "$window_json" | jq -r '.window_name')
+                first_pane=1
+                echo "$window_json" | jq -c '.panes[]' | while IFS= read -r pane_json; do
+                    pane_path=$(echo "$pane_json" | jq -r '.path')
+                    if [[ $first_pane -eq 1 ]]; then
+                        # For the first pane, simply move to its directory.
+                        tmux send-keys -t "$session_name:$window_name" "cd $pane_path" C-m
+                        first_pane=0
+                    else
+                        # Create new pane and move to directory.
+                        tmux split-window -t "$session_name:$window_name"
+                        tmux send-keys -t "$session_name:$window_name" "cd $pane_path" C-m
+                    fi
+                done
+                # Set up layout and set active window correctly.
+                tmux select-layout -t "$session_name:$window_name" tiled
+                tmux select-window -t "$session_name:$window_name"
+            done
         done
-    fi
-    echo "--------"
-    echo "Commands:"
-    echo "C - Create and attach a new session"
-    echo "R - Rename an existing session"
-    echo "D - Delete a session"
-    echo "S - Session Manager Configuration"
-    echo "N - Number (Enter number to attach to a session)"
-    echo "X - Exit"
-    echo "--------"
-}
-
-# Attach to an existing session
-function attach_to_session {
-    read -p "Enter session number to attach: " session_num
-    if ! [[ "$session_num" =~ ^[0-9]+$ ]] || (( session_num < 1 || session_num > ${#sessions[@]} )); then
-        echo "Invalid session number. Please try again."
-        sleep 2
     else
-        tmux attach-session -t "${sessions[$((session_num-1))]}"
+        echo "Session file does not exist or session saving is disabled."
     fi
 }
 
-# Handle user input from main menu
+# Attach to an existing session by number or name
+function attach_to_session {
+    local input="$1"
+    
+    # Check if input is a number and within the valid range
+    if [[ "$input" =~ ^[0-9]+$ ]] && (( input > 0 && input <= ${#sessions[@]} )); then
+        tmux attach-session -t "${sessions[$((input-1))]}"
+    else
+        # Try to match input as a session name
+        if tmux has-session -t "$input" 2>/dev/null; then
+            tmux attach-session -t "$input"
+        else
+            echo "No session found with identifier '$input'. Identifiers can be session numbers or names."
+            sleep 2
+        fi
+    fi
+}
+
+
+# Create a new session without attaching
+function create_new_session {
+    read -p "Enter new session name: " sname
+    if [ -z "$sname" ]; then
+        echo "Session name cannot be empty."
+        return
+    fi
+    
+    tmux new-session -d -s "$sname"
+    echo "Session '$sname' created."
+    save_sessions
+    if [[ "$attach_after_creation" == "true" ]]; then
+        tmux attach-session -t "$sname"
+    fi
+}
+
+# Handle main input processing
 function process_input {
     read -p "Selection: " input
     case "$input" in
-        [1-9]|[1-9][0-9]*)
-            if (( input > 0 && input <= ${#sessions[@]} )); then
-                attach_to_session $input
-            else
-                echo "Invalid session number. Please try again."
-                sleep 2
-            fi
+        [1-9]*) # Numeric input for quick attach
+            attach_to_session "$input"
             ;;
-        C|c) 
-            read -p "Enter session name: " sname
-            tmux new-session -d -s "$sname" && tmux attach-session -t "$sname"
-            save_sessions
+        [Aa]) # Attach to session by name
+            read -p "Enter session name or number to attach: " session_name
+            attach_to_session "$session_name"
             ;;
-        R|r) 
-            rename_session
+        [Cc]) # Create new session
+            create_new_session
             ;;
-        D|d) 
-            delete_session
+        [Rr]) # Rename a session
+            # ... existing logic
             ;;
-        S|s) 
+        [Dd]) # Delete a session
+            # ... existing logic
+            ;;
+        [Ss]) # Open config menu
             session_manager_configuration_menu
             ;;
-        X|x)
+        [Xx]) # Exit script
             break
             ;;
         *) 
-            echo "Invalid selection. Please choose a command from the list or a valid session number."
+            echo "Invalid selection. Please choose a command from the list."
             read -p "Press any key to continue..."
             ;;
     esac
 }
 
-# Configuration menu for session manager
-function session_manager_configuration_menu {
-    while true; do
-        clear
-        echo "Session Manager Configuration:"
-        echo "1 - Toggle session save file (Currently $( [[ "$session_file_enabled" = true ]] && echo 'Enabled' || echo 'Disabled'))"
-        echo "2 - Set session file path (Currently: $session_file)"
-        echo "3 - Return to Main Menu"
-        echo "-----------------------"
-        read -p "Select option: " config_selection
+echo -e "--------------------------------------"
 
-        case $config_selection in
-            1) toggle_session_saving ;;
-            2) set_session_file_path ;;
-            3) break ;;
-            *) 
-                echo "Invalid option! Please try again."
-                sleep 2
-                ;;
-        esac
-    done
+function display_header {
+    local title="$1"
+    echo -e "\n\033[1;34m$title\033[0m"  # Blue bold formatting with added new lines for spacing
+    echo -e "--------------------------------------\n"
 }
 
-# Start the main loop
+function display_subheader {
+    local title="$1"
+    echo -e "\n\033[1;36m$title\033[0m:"  # Cyan color for subsection titles
+}
+
+# Function to display command options
+function display_commands {
+    echo -e "\033[0;33mC\033[0m - Create a new session"
+    echo -e "\033[0;33mA\033[0m - Attach to an existing session"
+    echo -e "\033[0;33mR\033[0m - Rename an existing session"
+    echo -e "\033[0;33mD\033[0m - Delete a session"
+    echo -e "\033[0;33mS\033[0m - Session Manager Configuration"
+    echo -e "\033[0;33mX\033[0m - Exit\n"
+}
+
+function display_sessions {
+    clear
+    display_header "TMUX Session Manager - by flipflopsen"
+    
+    if [[ "$session_file_enabled" == "true" ]]; then
+        echo -e "Session file: $session_file [\033[32mEnabled\033[0m]\n"
+    else
+        echo -e "Session file: $session_file [\033[31mDisabled\033[0m]\n"
+    fi
+
+    mapfile -t sessions < <(tmux list-sessions -F '#S' 2>/dev/null)
+    display_subheader "Available Sessions"
+    if [ ${#sessions[@]} -eq 0 ]; then
+        echo "-- No active sessions --"
+    else
+        for i in "${!sessions[@]}"; do
+            echo -e "\033[32m$((i + 1))\033[0m. ${sessions[i]}"
+        done
+    fi
+
+    display_subheader "Commands"
+    display_commands
+    echo -e "\033[1;33mSelect an option:\033[0m"  # Bold yellow text for selection prompt
+}
+
+# Entry point
+restore_configuration
+if [[ "$session_file_enabled" == "true" ]]; then
+    restore_sessions
+fi
+
 while true; do
     display_sessions
     process_input
