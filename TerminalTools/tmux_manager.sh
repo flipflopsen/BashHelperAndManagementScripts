@@ -15,6 +15,14 @@ function save_configuration {
     echo "attach_after_creation=$attach_after_creation" >> "$config_file"
 }
 
+# Add a function to save sessions on terminal close
+function save_on_exit {
+    if [[ "$session_file_enabled" == "true" ]]; then
+        echo "Saving sessions due to terminal close..."
+        save_sessions
+    fi
+}
+
 # Sets the config file path (in options menu)
 function set_config_file_path {
     read -p "Enter new configuration file path: " new_config_path
@@ -346,6 +354,8 @@ function display_sessions {
     display_commands
     echo -e "\033[1;33mSelect an option:\033[0m"  # Bold yellow text for selection prompt
 }
+
+trap save_on_exit SIGHUP
 
 # Entry point
 restore_configuration

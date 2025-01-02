@@ -1,0 +1,1 @@
+Here you can store some public keys, they will get added to your keyring anyways but maybe it's neat to have them here as well.

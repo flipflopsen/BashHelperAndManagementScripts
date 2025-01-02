@@ -1,20 +1,20 @@
 #!/bin/bash
 
-# Check if the correct number of arguments is given
-if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <git-url>"
+# Check if at least the correct number of arguments is given
+if [ "$#" -lt 1 ]; then
+    echo "Usage: $0 <git-url> [alternative-access-file]"
     exit 1
 fi
 
 GIT_URL="$1"
-ACCESS_FILE="$HOME/Documents/GitAccess.txt"
+DEFAULT_ACCESS_FILE_PATH="$HOME/Documents/GitAccess.txt"
 
 # Function to decrypt and parse JSON file for credentials
 function get_credentials {
     local fpath="$1"
     local password="$2"
 
-    # Decrypt file to temporary JSON for parsing securely delete afterward
+    # Decrypt file to temporary JSON for parsing, securely delete afterward
     local temp_json_path=$(mktemp)
     openssl enc -aes-256-cbc -d -a -in "$fpath" -pass pass:"$password" -out "$temp_json_path" 2>/dev/null
 
@@ -40,9 +40,15 @@ function get_credentials {
     echo "$user:$token"
 }
 
+# Determine which access file to use
+ACCESS_FILE="$DEFAULT_ACCESS_FILE_PATH"
+if [ ! -f "$ACCESS_FILE" ] && [ "$#" -eq 2 ]; then
+    ACCESS_FILE="$2"
+fi
+
 # Check if the access file exists
 if [ ! -f "$ACCESS_FILE" ]; then
-    echo "The encrypted Git access file does not exist: $ACCESS_FILE"
+    echo "The encrypted Git access file does not exist."
     exit 1
 fi
 
@@ -52,6 +58,10 @@ read -s decryption_password
 
 # Extract credentials
 credentials=$(get_credentials "$ACCESS_FILE" "$decryption_password")
+if [ -z "$credentials" ]; then
+    echo "Failed to obtain credentials."
+    exit 1
+fi
 
 # Replace 'https://' with 'https://username:token@' in the Git URL
 AUTH_URL=$(echo "$GIT_URL" | sed "s|https://|https://$credentials@|")
