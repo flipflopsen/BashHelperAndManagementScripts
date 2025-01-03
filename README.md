@@ -12,7 +12,8 @@ PR's are welcome as long as you don't try to shamefully include some "magic" byt
 ### Terminal Multiplexer
 1. **tmux_manager**: A robust tool for handling various tmux session operations, saves sessions beyond reboot, etc. (has colors)
 ### GPG related
-1. **encrypt**: Encrypt
+1. **encrypt**: Script to encrypt a file using a given public key
+2. **decrypt**: Script to decrypt a file using a given private key
 
 ## Prerequisites
 The following tools and libraries are required to run these scripts:
