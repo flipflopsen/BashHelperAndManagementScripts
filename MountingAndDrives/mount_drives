@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# Ask for the root password at the beginning and elevate the script privileges
+if [ "$(id -u)" != "0" ]; then
+    echo "Re-running the script under root..."
+    exec sudo bash "$0" "$@"
+fi
+
+# Get the directory where the script is located, even if it's called from symlink
+SCRIPT_DIR=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)
+
+# Specify the full path to the configuration file.
+CONFIG_FILE="$SCRIPT_DIR/drive_configuration.json"
+
+# Load configuration from JSON file
+USERNAME=$(jq -r '.Username' $CONFIG_FILE)
+MOUNT_POINT_BASE=$(jq -r '.MountPointBaseDir' $CONFIG_FILE)
+CREATE_LINKS=$(jq -r '.DoCreateLinksToDevices' $CONFIG_FILE)
+LINK_BASE_FOLDER=$(jq -r '.DeviceLinkBaseFolder' $CONFIG_FILE)
+DEVICES=$(jq -c '.Devices[]' $CONFIG_FILE)
+
+# Ensuring base directories exist
+mkdir -p $MOUNT_POINT_BASE/$USERNAME
+[ "$CREATE_LINKS" == "true" ] && mkdir -p $LINK_BASE_FOLDER
+
+# Parse each device and mount accordingly
+echo "$DEVICES" | jq -c '.' | while read -r device; do
+    IDENTIFIER=$(echo $device | jq -r '.Identifier')
+    LOCATION=$(echo $device | jq -r '.location')
+    MOUNT_POINT="$MOUNT_POINT_BASE/$USERNAME/$IDENTIFIER"
+    BIND_MOUNT="$MOUNT_POINT.bind"
+
+    mkdir -p $MOUNT_POINT
+    mkdir -p $BIND_MOUNT
+
+    FS_TYPE=$(lsblk -no FSTYPE $LOCATION)
+
+    echo "Mounting $LOCATION on $MOUNT_POINT as $FS_TYPE"
+    case "$FS_TYPE" in
+        "ntfs")
+            USER_ID=$(id -u $USERNAME)
+            GROUP_ID=$(id -g $USERNAME)
+            ntfs-3g $LOCATION $MOUNT_POINT -o uid=$USER_ID,gid=$GROUP_ID,dmask=022,fmask=133
+            ;;
+        "ext4"|"xfs"|"btrfs"|"exfat")
+            mount $LOCATION $MOUNT_POINT
+            ;;
+        *)
+            echo "$FS_TYPE is not supported."
+            exit 1
+            ;;
+    esac
+
+    # Using bindfs to remount with altered permissions
+    bindfs --force-user=$USERNAME --force-group=$USERNAME $MOUNT_POINT $BIND_MOUNT
+    echo "Mount point remounted with bindfs at $BIND_MOUNT with $USERNAME ownership"
+
+    echo "Linking $BIND_MOUNT to $LINK_BASE_FOLDER/$IDENTIFIER"
+    if [ "$CREATE_LINKS" == "true" ]; then
+        ln -sfn $BIND_MOUNT $LINK_BASE_FOLDER/$IDENTIFIER
+    fi
+
+done
+
+echo "All devices mounted and links created as specified."

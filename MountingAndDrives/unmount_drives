@@ -1,0 +1,43 @@
+#!/bin/bash
+
+
+# Get the directory where the script is located
+SCRIPT_DIR=$( cd "$( dirname "$( readlink -f "${BASH_SOURCE[0]}" )" )" && pwd )
+
+# Specify the path to the configuration file
+CONFIG_FILE="$SCRIPT_DIR/drive_configuration.json"
+
+# Ask for the root password at the beginning and elevate the script privileges
+if [ "$(id -u)" != "0" ]; then
+    echo "Re-running the script under root..."
+    exec sudo bash "$0" "$@"
+fi
+
+# Reading configurations for unmounting and removing directories
+USERNAME=$(jq -r '.Username' $CONFIG_FILE)
+MOUNT_POINT_BASE=$(jq -r '.MountPointBaseDir' $CONFIG_FILE)
+LINK_BASE_FOLDER=$(jq -r '.DeviceLinkBaseFolder' $CONFIG_FILE)
+DEVICES=$(jq -r '.Devices[].Identifier' $CONFIG_FILE)
+
+# Unmount drives and remove mount directories
+for DEVICE in $DEVICES; do
+    MOUNT_POINT="$MOUNT_POINT_BASE/$USERNAME/$DEVICE"
+    
+    # Unmount the drive
+    echo "Unmounting $MOUNT_POINT..."
+    umount "$MOUNT_POINT"
+    
+    # Check if the directory is empty and remove it
+    if [ -z "$(ls -A $MOUNT_POINT)" ]; then
+        echo "Removing directory $MOUNT_POINT..."
+        rmdir "$MOUNT_POINT"
+    else
+        echo "Warning: $MOUNT_POINT is not empty, not removing."
+    fi
+done
+
+# Remove all symbolic links in the ExternalDrives directory
+echo "Removing all symbolic links in $LINK_BASE_FOLDER..."
+find "$LINK_BASE_FOLDER" -type l -exec rm {} +
+
+echo "All drives unmounted and links removed."

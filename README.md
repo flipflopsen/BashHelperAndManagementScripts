@@ -14,6 +14,9 @@ PR's are welcome as long as you don't try to shamefully include some "magic" byt
 ### GPG related
 1. **encrypt**: Script to encrypt a file using a given public key
 2. **decrypt**: Script to decrypt a file using a given private key
+### Mounting
+1. **mount_drives**: Script mount drives and change ownership to a user, all defined in the  drive_configuration.json file. And it creates a symlink at a configurable location for easier access via terminal (especially on arch, better than navigating to /run/media/$USER/... all the time).
+2. **unmount_drives**: Script to unmount drives defined in the drive_configuration.json file.
 
 ## Prerequisites
 The following tools and libraries are required to run these scripts:
@@ -23,6 +26,7 @@ The following tools and libraries are required to run these scripts:
 - `openssl` (for handling encryption and decryption)
 - `jq` (for parsing JSON in Bash scripts)
 - `gpg` (for GPG related operations (encrypt/decrypt))
+- `bindfs` (for permission handling, ensure it is installed on your system and integrate it as required. It's useful when dealing with filesystems that are readable across both Windows and UNIX systems but have differing permissions capabilities.
 
 These tools can typically be installed via your Linux distribution’s package manager. Below are instructions for different systems and package managers:
 
