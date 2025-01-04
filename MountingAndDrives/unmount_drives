@@ -1,43 +1,44 @@
 #!/bin/bash
 
-
-# Get the directory where the script is located
-SCRIPT_DIR=$( cd "$( dirname "$( readlink -f "${BASH_SOURCE[0]}" )" )" && pwd )
-
-# Specify the path to the configuration file
+SCRIPT_DIR=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)
 CONFIG_FILE="$SCRIPT_DIR/drive_configuration.json"
 
-# Ask for the root password at the beginning and elevate the script privileges
 if [ "$(id -u)" != "0" ]; then
     echo "Re-running the script under root..."
     exec sudo bash "$0" "$@"
 fi
 
-# Reading configurations for unmounting and removing directories
 USERNAME=$(jq -r '.Username' $CONFIG_FILE)
 MOUNT_POINT_BASE=$(jq -r '.MountPointBaseDir' $CONFIG_FILE)
 LINK_BASE_FOLDER=$(jq -r '.DeviceLinkBaseFolder' $CONFIG_FILE)
-DEVICES=$(jq -r '.Devices[].Identifier' $CONFIG_FILE)
+DEVICES=$(jq -c '.Devices[]' $CONFIG_FILE)
 
-# Unmount drives and remove mount directories
-for DEVICE in $DEVICES; do
-    MOUNT_POINT="$MOUNT_POINT_BASE/$USERNAME/$DEVICE"
+echo "Starting unmounting process..."
+
+echo "$DEVICES" | jq -c '.' | while read -r device; do
+    IDENTIFIER=$(echo $device | jq -r '.Identifier')
+    MOUNT_POINT="$MOUNT_POINT_BASE/$USERNAME/$IDENTIFIER"
+    BIND_MOUNT="$MOUNT_POINT.bind"
     
-    # Unmount the drive
-    echo "Unmounting $MOUNT_POINT..."
-    umount "$MOUNT_POINT"
+    echo "Attempting to unmount $BIND_MOUNT..."
+    umount "$BIND_MOUNT" 2>/dev/null || echo "Warning: Failed to unmount $BIND_MOUNT. It may be in use."
+    rmdir "$BIND_MOUNT" 2>/dev/null || echo "Warning: Failed to remove $BIND_MOUNT. Directory might not be empty."
+
+    echo "Attempting to unmount $MOUNT_POINT..."
+    for attempt in {1..3}; do
+        umount "$MOUNT_POINT" 2>/dev/null && echo "Unmounted successfully on attempt $attempt." && break
+        echo "Attempt $attempt to unmount $MOUNT_POINT failed. Retrying..."
+        lsof +f -- $MOUNT_POINT
+        sleep 1
+    done
     
-    # Check if the directory is empty and remove it
-    if [ -z "$(ls -A $MOUNT_POINT)" ]; then
-        echo "Removing directory $MOUNT_POINT..."
-        rmdir "$MOUNT_POINT"
-    else
-        echo "Warning: $MOUNT_POINT is not empty, not removing."
-    fi
+    rmdir "$MOUNT_POINT" 2>/dev/null || echo "Warning: $MOUNT_POINT is not empty, not removing."
+
+    SPECIAL_PERMS=$(echo $device | jq -r '.SpecialPermissionMounting')
+    echo "Checked special permissions for $IDENTIFIER: $SPECIAL_PERMS"
 done
 
-# Remove all symbolic links in the ExternalDrives directory
 echo "Removing all symbolic links in $LINK_BASE_FOLDER..."
-find "$LINK_BASE_FOLDER" -type l -exec rm {} +
+find "$LINK_BASE_FOLDER" -type l \( ! -exec test -e {} \; -or -exec echo Removing {} \; -exec rm {} + \)
 
 echo "All drives unmounted and links removed."

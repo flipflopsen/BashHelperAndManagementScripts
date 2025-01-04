@@ -1,32 +1,38 @@
 {
-	"Username": "flip",
-	"MountPointBaseDir": "/run/media",
-	"DoCreateLinksToDevices": true,
-	"DeviceLinkBaseFolder": "/home/flip/ExternalDrives",
-	"Devices": [
-		{
-			"Identifier": "Banger",
-			"location": "/dev/sdc2"
-		},
-		{
-			"Identifier": "Swagger",
-			"location": "/dev/sdd1"
-		},
-		{
-			"Identifier": "Bigman",
-			"location": "/dev/nvme2n1p2"
-		},
-		{
-			"Identifier": "SharedDual",
-			"location": "/dev/sdb1"
-		},
-		{
-			"Identifier": "Litter",
-			"location": "/dev/sda1"
-		},
-		{
-			"Identifier": "Shitdrive",
-			"location": "/dev/sde1"
-		}
-	]
+    "Username": "flip",
+    "MountPointBaseDir": "/run/media",
+    "DoCreateLinksToDevices": true,
+    "DeviceLinkBaseFolder": "/home/flip/ExternalDrives",
+    "Devices": [
+        {
+            "Identifier": "Banger",
+            "location": "/dev/sdc2",
+            "SpecialPermissionMounting": true
+        },
+        {
+            "Identifier": "Swagger",
+            "location": "/dev/sdd1",
+            "SpecialPermissionMounting": false
+        },
+        {
+            "Identifier": "Bigman",
+            "location": "/dev/nvme2n1p2",
+            "SpecialPermissionMounting": true
+        },
+        {
+            "Identifier": "SharedDual",
+            "location": "/dev/sdb1",
+            "SpecialPermissionMounting": false
+        },
+        {
+            "Identifier": "Litter",
+            "location": "/dev/sda1",
+            "SpecialPermissionMounting": false
+        },
+        {
+            "Identifier": "Shitdrive",
+            "location": "/dev/sde1",
+            "SpecialPermissionMounting": false
+        }
+    ]
 }

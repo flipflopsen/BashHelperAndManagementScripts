@@ -27,6 +27,7 @@ mkdir -p $MOUNT_POINT_BASE/$USERNAME
 echo "$DEVICES" | jq -c '.' | while read -r device; do
     IDENTIFIER=$(echo $device | jq -r '.Identifier')
     LOCATION=$(echo $device | jq -r '.location')
+    SPECIAL_PERMS=$(echo $device | jq -r '.SpecialPermissionMounting')
     MOUNT_POINT="$MOUNT_POINT_BASE/$USERNAME/$IDENTIFIER"
     BIND_MOUNT="$MOUNT_POINT.bind"
 
@@ -36,14 +37,24 @@ echo "$DEVICES" | jq -c '.' | while read -r device; do
     FS_TYPE=$(lsblk -no FSTYPE $LOCATION)
 
     echo "Mounting $LOCATION on $MOUNT_POINT as $FS_TYPE"
+    USER_ID=$(id -u $USERNAME)
+    GROUP_ID=$(id -g $USERNAME)
     case "$FS_TYPE" in
         "ntfs")
-            USER_ID=$(id -u $USERNAME)
-            GROUP_ID=$(id -g $USERNAME)
-            ntfs-3g $LOCATION $MOUNT_POINT -o uid=$USER_ID,gid=$GROUP_ID,dmask=022,fmask=133
+            MOUNT_OPTIONS="rw,uid=$USER_ID,gid=$GROUP_ID"
+            if [ "$SPECIAL_PERMS" == "true" ]; then
+                MOUNT_OPTIONS+=",umask=0000"
+            fi
+            ntfs-3g $LOCATION $MOUNT_POINT -o $MOUNT_OPTIONS
             ;;
-        "ext4"|"xfs"|"btrfs"|"exfat")
+        "exfat")
+            mount -t exfat -o rw,uid=$USER_ID,gid=$GROUP_ID,fmask=0133,dmask=0022 $LOCATION $MOUNT_POINT
+            ;;
+        "ext4"|"xfs"|"btrfs")
             mount $LOCATION $MOUNT_POINT
+            if [ "$SPECIAL_PERMS" == "true" ]; then
+                chown $USERNAME:$USERNAME $MOUNT_POINT
+            fi
             ;;
         *)
             echo "$FS_TYPE is not supported."
@@ -52,7 +63,7 @@ echo "$DEVICES" | jq -c '.' | while read -r device; do
     esac
 
     # Using bindfs to remount with altered permissions
-    bindfs --force-user=$USERNAME --force-group=$USERNAME $MOUNT_POINT $BIND_MOUNT
+    bindfs --perms=a=rwxD:$USERNAME --mirror-only=$USERNAME --create-for-user=$USERNAME --create-for-group=$USERNAME $MOUNT_POINT $BIND_MOUNT
     echo "Mount point remounted with bindfs at $BIND_MOUNT with $USERNAME ownership"
 
     echo "Linking $BIND_MOUNT to $LINK_BASE_FOLDER/$IDENTIFIER"
