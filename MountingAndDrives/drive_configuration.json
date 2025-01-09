@@ -12,7 +12,7 @@
         {
             "Identifier": "Swagger",
             "location": "/dev/sdd1",
-            "SpecialPermissionMounting": false
+            "SpecialPermissionMounting": true
         },
         {
             "Identifier": "Bigman",
@@ -22,17 +22,17 @@
         {
             "Identifier": "SharedDual",
             "location": "/dev/sdb1",
-            "SpecialPermissionMounting": false
+            "SpecialPermissionMounting": true
         },
         {
             "Identifier": "Litter",
             "location": "/dev/sda1",
-            "SpecialPermissionMounting": false
+            "SpecialPermissionMounting": true
         },
         {
             "Identifier": "Shitdrive",
             "location": "/dev/sde1",
-            "SpecialPermissionMounting": false
+            "SpecialPermissionMounting": true
         }
     ]
 }

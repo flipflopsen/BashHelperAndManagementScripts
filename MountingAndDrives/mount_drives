@@ -66,9 +66,9 @@ echo "$DEVICES" | jq -c '.' | while read -r device; do
     bindfs --perms=a=rwxD:$USERNAME --mirror-only=$USERNAME --create-for-user=$USERNAME --create-for-group=$USERNAME $MOUNT_POINT $BIND_MOUNT
     echo "Mount point remounted with bindfs at $BIND_MOUNT with $USERNAME ownership"
 
-    echo "Linking $BIND_MOUNT to $LINK_BASE_FOLDER/$IDENTIFIER"
+    echo "Linking $MOUNT_POINT to $LINK_BASE_FOLDER/$IDENTIFIER"
     if [ "$CREATE_LINKS" == "true" ]; then
-        ln -sfn $BIND_MOUNT $LINK_BASE_FOLDER/$IDENTIFIER
+        ln -sfn $MOUNT_POINT $LINK_BASE_FOLDER/$IDENTIFIER
     fi
 
 done
