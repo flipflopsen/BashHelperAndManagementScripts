@@ -9,6 +9,7 @@ PR's are welcome as long as you don't try to shamefully include some "magic" byt
 1. **CreateEncryptedGitAccess**: Encrypts and stores Git credentials.
 2. **gitclonepac**: Utilizes encrypted credentials to securely clone repositories.
 3. **SetGitAccountAccess**: Configures and encrypts GitHub account details, also manages local Git settings.
+4. **gitdecode**: Decodes GitAccess.txt generated from CreateEncryptedGitAccess, only exists because I needed it once.
 ### Terminal Multiplexer
 1. **tmux_manager**: A robust tool for handling various tmux session operations, saves sessions beyond reboot, etc. (has colors)
 ### GPG related
@@ -17,6 +18,8 @@ PR's are welcome as long as you don't try to shamefully include some "magic" byt
 ### Mounting
 1. **mount_drives**: Script mount drives and change ownership to a user, all defined in the  drive_configuration.json file. And it creates a symlink at a configurable location for easier access via terminal (especially on arch, better than navigating to /run/media/$USER/... all the time).
 2. **unmount_drives**: Script to unmount drives defined in the drive_configuration.json file.
+### Python section
+1. **archlinux-python**: tries to be a copy of the archlinux-java tool, still WIP and does not work.
 
 ## Prerequisites
 The following tools and libraries are required to run these scripts:
