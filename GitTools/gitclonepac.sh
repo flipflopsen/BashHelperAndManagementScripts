@@ -35,7 +35,6 @@ function get_credentials {
         echo "Error reading user or token from JSON content."
         exit 1
     fi
-
     # Return credentials
     echo "$user:$token"
 }
