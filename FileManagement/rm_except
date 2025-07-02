@@ -1,0 +1,9 @@
+#!/bin/bash
+
+ignore="$(pwd)/m_except.sh"
+
+for fignore in "$@"; do
+  ignore=${ignore}"-not -name ${fignore} "
+done
+
+find . -type f $ignore -delete
