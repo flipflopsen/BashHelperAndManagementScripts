@@ -66,15 +66,15 @@ chmod +x Proton/proton-run
 ```text
 LinToolsAndStuff/
 ├── DistroSetup/          # Dev-environment bootstrap (cross-distro)
-│   ├── dev_setup.sh      # ← main entry point
-│   ├── distro_utils.sh   # package-manager abstraction
+│   ├── dev_setup.sh      # setup for new linux distros, installs a bunch of stuff and is highly configurable
+│   ├── distro_utils.sh   # package-manager helper tool
 │   └── old/
 ├── FileManagement/
-│   └── Moverino.sh       # high-performance mover
+│   └── Moverino.sh       # high-performance file & folder mover
 ├── MountingAndDrives/
 │   └── setup-drives.sh   # drive automount & links
 ├── Virtualization/
-│   └── vmdk2qcow2.sh     # disk conversion
+│   └── vmdk2qcow2.sh     # disk conversion (not written by me)
 ├── Proton/
 │   └── proton-run        # Proton wrapper
 ├── Gpg/                  # key files + encrypt/decrypt scripts
