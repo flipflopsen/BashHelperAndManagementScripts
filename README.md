@@ -9,142 +9,15 @@ No guarantee that every script works 100% on your env!
 
 ## Table of Contents
 
+0. [Prerequisites](#prerequisites)
 1. [Categories](#categories)
-2. [Quick Start](#quick-start)
-3. [Repository Map](#repository-map)
-4. [Script Highlights](#script-highlights)
-5. [Contributing](#contributing)
-6. [License](#license)
-7. [Legacy Appendix](#legacy-appendix)
+2. [Repository Map](#repository-map)
+3. [Script Highlights](#script-highlights)
+4. [Scripts Overview](#scripts-overview)
+5. [Some Words](#some-words)
+6. [Contributing](#contributing)
 
 ---
-
-## Categories
-- **Cross-Distro Dev Setup** – `DistroSetup/dev_setup.sh` installs languages, IDEs, Docker/Podman, databases, LSPs, AI/ML tooling and shell goodies via simple flags. Works on apt, dnf/yum and yay/pacman.
-- **Drive Automount & Symlinks** – `MountingAndDrives/setup-drives.sh` detects drives, writes fstab, mounts/unmounts, and creates symlinks under `~/Drives` + `~/Development/Storage`.
-- **Moverino** – parallel, pattern-aware file mover / copier (`FileManagement/Moverino.sh`).
-- **Proton-Run** – run Windows binaries in isolated Proton prefixes without Steam (`Proton/proton-run`).
-- **GPG Helpers** – easy message encryption/decryption and key handling (`Gpg/`).
-- **Virtualisation Tools** – convert VMDK → qcow2 (`Virtualization/vmdk2qcow2.sh`).
-- **Tiny Quality-of-Life Scripts** – enable/disable touchpad, terminal shortcuts, etc.
-
-## Quick Start
-
-### Developer workstation
-
-```bash
-chmod +x DistroSetup/dev_setup.sh
-./DistroSetup/dev_setup.sh --all               # everything
-./DistroSetup/dev_setup.sh --base --languages  # pick categories
-```
-
-Run with `--help` to see all flags.
-
-### Drive handling
-
-```bash
-chmod +x MountingAndDrives/setup-drives.sh
-./MountingAndDrives/setup-drives.sh --interactive --automount --symlinks
-```
-
-### File mover
-
-```bash
-chmod +x FileManagement/Moverino.sh
-./FileManagement/Moverino.sh --source ~/Downloads --dest /mnt/BigDrive --pattern '*.iso'
-```
-
-### Proton launcher
-
-```bash
-chmod +x Proton/proton-run
-./Proton/proton-run /path/to/game.exe --proton 9.0 --winetricks corefonts
-```
-
-## Repository Map
-
-```text
-LinToolsAndStuff/
-├── DistroSetup/          # Dev-environment bootstrap (cross-distro)
-│   ├── dev_setup.sh      # setup for new linux distros, installs a bunch of stuff and is highly configurable
-│   ├── distro_utils.sh   # package-manager helper tool
-│   └── old/
-├── FileManagement/
-│   └── Moverino.sh       # high-performance file & folder mover
-├── MountingAndDrives/
-│   └── setup-drives.sh   # drive automount & links
-├── Virtualization/
-│   └── vmdk2qcow2.sh     # disk conversion (not written by me)
-├── Proton/
-│   └── proton-run        # Proton wrapper
-├── Gpg/                  # key files + encrypt/decrypt scripts
-├── Git/                  # git credential helpers etc.
-├── TerminalTools/        # misc CLI helpers
-├── PythonTools/          # assorted python utilities
-└── README.md             # you are here
-```
-
-## Script Highlights
-
-| Script | Purpose |
-|--------|---------|
-| `dev_setup.sh` | Flag-driven developer setup (languages, IDEs, Docker, databases, AI/ML, etc.). |
-| `setup-drives.sh` | Detect/mount drives, fstab entries, symlinks, interactive mode. |
-| `Moverino.sh` | Robust parallel file mover/copy tool. |
-| `proton-run` | Minimal wrapper to run Windows executables with custom Proton. |
-| `vmdk2qcow2.sh` | Convert VMware disks to qcow2 for KVM. |
-
-## Contributing
-
-Pull requests are welcome – please keep to POSIX Bash, run `shellcheck`, and provide concise comments.
-
-## License
-
-MIT – see each script header for details.
-
----
-
-## Legacy Appendix
-
-The original docs for git credential helpers, tmux manager, and GPG scripts are kept below for reference. They may be outdated but remain functional.
-
-This repository contains some scripts and utilities I've written with the goal of creating some comfort in setting up and using other software in some use cases.
-
-No guarantee of 100% bug-free code.
-PR's are welcome as long as you don't try to shamefully include some "magic" bytecode in there.
-
-## Scripts Overview
-
-### Git section
-
-1. **CreateEncryptedGitAccess**: Encrypts and stores Git credentials.
-2. **gitclonepac**: Utilizes encrypted credentials to securely clone repositories.
-3. **SetGitAccountAccess**: Configures and encrypts GitHub account details, also manages local Git settings.
-4. **gitdecode**: Decodes GitAccess.txt generated from CreateEncryptedGitAccess, only exists because I needed it once.
-
-### Terminal Multiplexer
-
-1. **tmux_manager**: A robust tool for handling various tmux session operations, saves sessions beyond reboot, etc. (has colors)
-
-### GPG related
-
-1. **encrypt**: Script to encrypt a file using a given public key
-2. **decrypt**: Script to decrypt a file using a given private key
-
-### Mounting
-
-Use the new script `setup-drives.sh` for mounting drives and creating symlinks.
-This script is a lot more fail-safe and supports most used formats, has more checks for e.g. EFI Partitions and more.
-
-#### Old Scripts
-
-1. **mount_drives**: Script mount drives and change ownership to a user, all defined in the  drive_configuration.json file. And it creates a symlink at a configurable location for easier access via terminal (especially on arch, better than navigating to /run/media/$USER/... all the time).
-
-2. **unmount_drives**: Script to unmount drives defined in the drive_configuration.json file.
-
-### Python section
-
-1. **archlinux-python**: tries to be a copy of the archlinux-java tool, still WIP and does not work.
 
 ## Prerequisites
 
@@ -186,6 +59,113 @@ sudo dnf install bash git tmux openssl jq gpg
 ```bash
 brew install git jq gpg tmux
 ```
+
+---
+
+## Categories
+- **Cross-Distro Dev Setup** – `DistroSetup/dev_setup.sh` installs languages, IDEs, Docker/Podman, databases, LSPs, AI/ML tooling and shell goodies via simple flags. Works on apt, dnf/yum and yay/pacman.
+- **Drive Automount & Symlinks** – `MountingAndDrives/setup-drives.sh` detects drives, writes fstab, mounts/unmounts, and creates symlinks under `~/Drives` + `~/Development/Storage`.
+- **Moverino** – parallel, pattern-aware file mover / copier (`FileManagement/Moverino.sh`).
+- **Proton-Run** – run Windows binaries in isolated Proton prefixes without Steam (`Proton/proton-run`).
+- **GPG Helpers** – easy message encryption/decryption and key handling (`Gpg/`).
+- **Virtualisation Tools** – convert VMDK → qcow2 (`Virtualization/vmdk2qcow2.sh`).
+- **Tiny Quality-of-Life Scripts** – enable/disable touchpad, terminal shortcuts, etc.
+
+## Repository Map
+
+```text
+LinToolsAndStuff/
+├── DistroSetup/          # Dev-environment bootstrap (cross-distro)
+│   ├── dev_setup.sh      # setup for new linux distros, installs a bunch of stuff and is highly configurable
+│   ├── distro_utils.sh   # package-manager helper tool
+│   └── old/
+├── FileManagement/
+│   └── Moverino.sh       # high-performance file & folder mover
+├── MountingAndDrives/
+│   └── setup-drives.sh   # drive automount & links
+├── Virtualization/
+│   └── vmdk2qcow2.sh     # disk conversion (not written by me)
+├── Proton/
+│   └── proton-run        # Proton wrapper
+├── Gpg/                  # key files + encrypt/decrypt scripts
+├── Git/                  # git credential helpers etc.
+├── TerminalTools/        # misc CLI helpers
+├── PythonTools/          # assorted python utilities
+└── README.md             # you are here
+```
+
+## Script Highlights
+
+| Script | Purpose |
+|--------|---------|
+| `dev_setup.sh` | Flag-driven developer setup (languages, IDEs, Docker, databases, AI/ML, etc.). |
+| `setup-drives.sh` | Detect/mount drives, fstab entries, symlinks, interactive mode. |
+| `Moverino.sh` | Robust parallel file mover/copy tool. |
+| `proton-run` | Minimal wrapper to run Windows executables with custom Proton. |
+| `tmux_manager` | TMUX Session manager with interactive creation of sessions with renaming, rejoining etc. |
+
+
+## Scripts Overview
+
+### Git section
+
+1. **CreateEncryptedGitAccess**: Encrypts and stores Git credentials.
+2. **gitclonepac**: Utilizes encrypted credentials to securely clone repositories.
+3. **SetGitAccountAccess**: Configures and encrypts GitHub account details, also manages local Git settings.
+4. **gitdecode**: Decodes GitAccess.txt generated from CreateEncryptedGitAccess, only exists because I needed it once.
+
+### Terminal Multiplexer
+
+1. **tmux_manager**: A robust tool for handling various tmux session operations, saves sessions beyond reboot, etc. (has colors)
+
+### GPG related
+
+1. **encrypt**: Script to encrypt a file using a given public key
+2. **decrypt**: Script to decrypt a file using a given private key
+
+### New Distro Setup Script (supports multiple package managers)
+
+```bash
+chmod +x DistroSetup/dev_setup.sh
+./DistroSetup/dev_setup.sh --all               # everything
+./DistroSetup/dev_setup.sh --base --languages  # pick categories
+```
+
+Run with `--help` to see all flags.
+
+### Drive handling & Mounting
+
+Use the new script `setup-drives.sh` for mounting drives and creating symlinks.
+This script is a lot more fail-safe and supports most used formats, has more checks for e.g. EFI Partitions and more.
+
+```bash
+chmod +x MountingAndDrives/setup-drives.sh
+./MountingAndDrives/setup-drives.sh --interactive --automount --symlinks
+```
+
+If you encounter some **permission issues** on the mounted drive, or some other error then **check the uid and gid** of the mount commands in the script **because they are hardcoded**.
+
+#### Old Scripts
+
+1. **mount_drives**: Script mount drives and change ownership to a user, all defined in the  drive_configuration.json file. And it creates a symlink at a configurable location for easier access via terminal (especially on arch, better than navigating to /run/media/$USER/... all the time).
+
+2. **unmount_drives**: Script to unmount drives defined in the drive_configuration.json file.
+
+
+### File mover
+
+```bash
+chmod +x FileManagement/Moverino.sh
+./FileManagement/Moverino.sh --source ~/Downloads --dest /mnt/BigDrive --pattern '*.iso'
+```
+
+### Proton launcher
+
+```bash
+chmod +x Proton/proton-run
+./Proton/proton-run /path/to/game.exe --proton 9.0 --winetricks corefonts
+```
+
 
 ---
 
@@ -317,13 +297,14 @@ The decrypted content will be saved in the `Messages/Decrypted` directory, fol
 
 ---
 
-### Configuration
+## Some Words
+
+Generally, take extra precautions with how you handle your encryption keys and passwords - these Git scripts are not guaranteed to offer state-of-the-art secure management of passwords/credentials but are rather some tooling I've created for my workflow in specific use cases. No guarantees or insurance are provided.
 
 Normally the scripts provide (optional) input arguments.
 A few scripts e.g. the tmux_manager script do have interactive menus, others offer CLI arguments and others utilize flags or (env)vars or everything together.
 
-### Some words
-
-Generally, take extra precautions with how you handle your encryption keys and passwords - these Git scripts are not guaranteed to offer state-of-the-art secure management of passwords/credentials but are rather some tooling I've created for my workflow in specific use cases. No guarantees or insurance are provided.
-
 I've tried to comment on the code and make it as readable as possible. I would recommend, especially for the Git scripts, that you first take a look at them before trusting them, which should generally apply to code you don’t know or clone from a random person on GitHub. :)
+
+## Contributing
+If you want to continue then feel free to do so wiht utilizing the PR system and/or Issues section.
