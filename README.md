@@ -4,7 +4,8 @@ A toolbox of some of my bash scripts, some of them I am using in my daily workfl
 I would recommend the `setup-drives` script, the `tmux_manager` if you're already using tmux and if you dislike tools like Lutris, take a look at `proton-run`.
 
 Before you blindly execute any of the scripts I would strongly recommend taking a quick look at them since a few scripts have a lot of configurable flags or variables at the top of the script.
-No guarantee that every script works 100\% on your env!
+No guarantee that every script works 100% on your env!
+
 ---
 
 ## Table of Contents
