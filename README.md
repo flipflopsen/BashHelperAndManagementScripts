@@ -320,7 +320,7 @@ The decrypted content will be saved in the `Messages/Decrypted` directory, fol
 ### Configuration
 
 Normally the scripts provide (optional) input arguments.
-The tmux_manager script has a configuration menu which is interactive.
+A few scripts e.g. the tmux_manager script do have interactive menus, others offer CLI arguments and others utilize flags or (env)vars or everything together.
 
 ### Some words
 
