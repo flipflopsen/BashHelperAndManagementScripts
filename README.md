@@ -1,14 +1,13 @@
-# LinToolsAndStuff
+# Bash Helper and Management Scripts
 
-A curated toolbox of cross-distro Linux scripts by **flipflopsen**.
-
-*One repo – many day-to-day helpers: developer environment bootstrap, drive automounts, file movers, Proton wrappers, GPG utilities, virtualization helpers and more.*
+A toolbox of some of my bash scripts, some of them I am using in my daily workflow.
+I would recommend the `setup-drives` script, the `tmux_manager` if you're already using tmux and if you dislike tools like Lutris, take a look at `proton-run`.
 
 ---
 
 ## Table of Contents
 
-1. [Features](#features)
+1. [Categories](#categories)
 2. [Quick Start](#quick-start)
 3. [Repository Map](#repository-map)
 4. [Script Highlights](#script-highlights)
@@ -18,8 +17,7 @@ A curated toolbox of cross-distro Linux scripts by **flipflopsen**.
 
 ---
 
-## Features
-
+## Categories
 - **Cross-Distro Dev Setup** – `DistroSetup/dev_setup.sh` installs languages, IDEs, Docker/Podman, databases, LSPs, AI/ML tooling and shell goodies via simple flags. Works on apt, dnf/yum and yay/pacman.
 - **Drive Automount & Symlinks** – `MountingAndDrives/setup-drives.sh` detects drives, writes fstab, mounts/unmounts, and creates symlinks under `~/Drives` + `~/Development/Storage`.
 - **Moverino** – parallel, pattern-aware file mover / copier (`FileManagement/Moverino.sh`).
